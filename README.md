@@ -1,1 +1,2 @@
-# qstash-cli
+QStash CLI
+

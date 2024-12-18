@@ -1,0 +1,26 @@
+{
+  "name": "start-qstash",
+  "version": "",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "node install.js",
+    "build": "tsc"
+  },
+  "bin": {
+    "qstash-cli": "./bin/qstash-server"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/node-fetch": "^2.6.12",
+    "@types/tar": "^6.1.1",
+    "@types/unzipper": "^0.10.10"
+  },
+  "dependencies": {
+    "node-fetch": "2.6.2",
+    "tar": "^6.1.1",
+    "unzipper": "^0.12.3"
+  }
+}
