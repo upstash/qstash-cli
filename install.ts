@@ -8,7 +8,7 @@ import PJ from "./package.json";
 
 interface BinaryConfig {
   arch: 'arm64' | 'x64';
-  platform: 'darwin' | 'linux' | 'windows';
+  platform: 'darwin' | 'linux' | 'win32';
   baseUrl: string;
 }
 
@@ -31,18 +31,16 @@ class BinaryDownloader {
       case 'linux':
         archieveType = '.tar.gz';
         break;
-      case 'windows':
+      case 'win32':
         archieveType = '.exe';
         break;
     }
-    return `${baseUrl}/${version}/qstash-server_${version}_${platform}_${arch}${archieveType}`;
+    return `${baseUrl}/${version}/qstash_${version}_${platform}_${arch}${archieveType}`;
   }
 
   public async download(): Promise<NodeJS.ReadableStream> {
     return new Promise((resolve, reject) => {
       const url = this.URL();
-      
-        console.log(url)
       fetch(url).then((res) => {
           if (res.status !== 200) {
             throw new Error(`Error downloading binary; invalid response status code: ${res.status}`);
@@ -67,7 +65,7 @@ class BinaryDownloader {
                 .on('close', () => resolve())
                 .on('error', reject)
               break;
-            case "windows":
+            case "win32":
                 stream
                   .pipe(unzipper.Extract({ path: bin }))
                   .on('close', () => resolve())
@@ -95,7 +93,7 @@ function getSysInfo(): { arch: BinaryConfig['arch'], platform: BinaryConfig['pla
         const downloader = new BinaryDownloader({
           arch,
           platform,
-          baseUrl: 'https://qstash-binaries.s3.eu-west-1.amazonaws.com/versions'
+          baseUrl: 'https://artifacts.upstash.com/qstash/versions'
         });
         const stream = await downloader.download();
         await downloader.extract(stream);
