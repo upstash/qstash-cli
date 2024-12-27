@@ -16,9 +16,7 @@ class BinaryDownloader {
   private config: BinaryConfig;
 
   constructor(config: BinaryConfig) {
-    this.config = {
-      ...config,
-    };
+    this.config = config
   }
 
   private URL(): string {
