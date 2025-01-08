@@ -8,7 +8,9 @@
     "build": "tsc"
   },
   "bin": {
-    "qstash-cli": "./bin/qstash-server"
+    "@upstash/qstash-cli": "./bin/qstash",
+    "qstash-cli": "./bin/qstash",
+    "qstash": "./bin/qstash"
   },
   "author": "",
   "license": "ISC",

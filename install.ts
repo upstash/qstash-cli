@@ -33,7 +33,7 @@ class BinaryDownloader {
         archieveType = '.exe';
         break;
     }
-    return `${baseUrl}/${version}/qstash_${version}_${platform}_${arch}${archieveType}`;
+    return `${baseUrl}/${version}/qstash-server_${version}_${platform}_${arch}${archieveType}`;
   }
 
   public async download(): Promise<NodeJS.ReadableStream> {
