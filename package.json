@@ -1,12 +1,17 @@
 {
   "name": "@upstash/qstash-cli",
-  "version": "",
+  "version": "2.20.8",
   "description": "Offical CLI tool for QStash",
   "main": "index.js",
   "scripts": {
+    "prepublishOnly": "touch bin/qstash",
     "postinstall": "node install.js",
     "build": "tsc"
   },
+  "files": [
+    "bin",
+    "install.js"
+  ],
   "bin": {
     "@upstash/qstash-cli": "./bin/qstash",
     "qstash-cli": "./bin/qstash",
