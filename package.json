@@ -1,6 +1,6 @@
 {
   "name": "@upstash/qstash-cli",
-  "version": "2.20.8",
+  "version": "2.20.9",
   "description": "Offical CLI tool for QStash",
   "main": "index.js",
   "scripts": {
