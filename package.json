@@ -1,0 +1,33 @@
+{
+  "name": "@upstash/qstash-cli",
+  "version": "2.20.9",
+  "description": "Offical CLI tool for QStash",
+  "main": "index.js",
+  "scripts": {
+    "prepublishOnly": "touch bin/qstash",
+    "postinstall": "node install.js",
+    "build": "tsc"
+  },
+  "files": [
+    "bin",
+    "install.js"
+  ],
+  "bin": {
+    "@upstash/qstash-cli": "./bin/qstash",
+    "qstash-cli": "./bin/qstash",
+    "qstash": "./bin/qstash"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/node-fetch": "^2.6.12",
+    "@types/tar": "^6.1.1",
+    "@types/unzipper": "^0.10.10"
+  },
+  "dependencies": {
+    "node-fetch": "2.6.2",
+    "tar": "^6.1.1",
+    "unzipper": "^0.12.3"
+  }
+}
