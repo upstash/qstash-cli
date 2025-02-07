@@ -85,15 +85,15 @@ function getSysInfo(): { arch: BinaryConfig['arch'], platform: BinaryConfig['pla
     const extension = extensionMap[process.platform]
 
     if (!platform) {
-      throw new Error(`Unsupported platform: ${platform}`);
+      throw new Error(`Unsupported platform: ${process.platform}`);
     }
 
     if (!arch) {
-      throw new Error(`Unsupported architecture: ${arch}`);
+      throw new Error(`Unsupported architecture: ${process.arch}`);
     }
 
     if (!extension) {
-      throw new Error(`Unsupported extension: ${extension}`);
+      throw new Error(`Unsupported extension: ${process.platform}`);
     }
 
     return { arch, platform, extension };
