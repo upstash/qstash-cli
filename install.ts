@@ -9,7 +9,7 @@ import PJ from "./package.json";
 interface BinaryConfig {
   arch: 'arm64' | 'amd64';
   platform: 'darwin' | 'linux' | 'windows';
-  extension: '.tar.gz' | '.exe';
+  extension: '.tar.gz' | '.zip';
   baseUrl: string;
 }
 
@@ -27,7 +27,7 @@ const archMap: Partial<Record<NodeJS.Architecture, BinaryConfig['arch']>> = {
 const extensionMap: Partial<Record<NodeJS.Platform, BinaryConfig['extension']>> = {
   linux: ".tar.gz",
   darwin: ".tar.gz",
-  win32: ".exe",
+  win32: ".zip",
 };
 
 class BinaryDownloader {
@@ -69,7 +69,7 @@ class BinaryDownloader {
                 .on('close', () => resolve())
                 .on('error', reject)
               break;
-            case ".exe":
+            case ".zip":
                 stream
                   .pipe(unzipper.Extract({ path: bin }))
                   .on('close', () => resolve())
