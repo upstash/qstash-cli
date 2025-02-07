@@ -7,10 +7,28 @@ import * as unzipper from 'unzipper';
 import PJ from "./package.json";
 
 interface BinaryConfig {
-  arch: 'arm64' | 'x64';
-  platform: 'darwin' | 'linux' | 'win32';
+  arch: 'arm64' | 'amd64';
+  platform: 'darwin' | 'linux' | 'windows';
+  extension: '.tar.gz' | '.zip';
   baseUrl: string;
 }
+
+const platformMap: Partial<Record<NodeJS.Platform, BinaryConfig['platform']>> = {
+  linux: "linux",
+  darwin: "darwin",
+  win32: "windows"
+};
+
+const archMap: Partial<Record<NodeJS.Architecture, BinaryConfig['arch']>> = {
+  arm64: "arm64",
+  x64: "amd64",
+};
+
+const extensionMap: Partial<Record<NodeJS.Platform, BinaryConfig['extension']>> = {
+  linux: ".tar.gz",
+  darwin: ".tar.gz",
+  win32: ".zip",
+};
 
 class BinaryDownloader {
   private config: BinaryConfig;
@@ -20,20 +38,9 @@ class BinaryDownloader {
   }
 
   private URL(): string {
-    const { arch, platform, baseUrl } = this.config;
-    let version = PJ.version.trim();
-
-    let archieveType = ""
-    switch (platform) {
-      case 'darwin':
-      case 'linux':
-        archieveType = '.tar.gz';
-        break;
-      case 'win32':
-        archieveType = '.exe';
-        break;
-    }
-    return `${baseUrl}/${version}/qstash-server_${version}_${platform}_${arch}${archieveType}`;
+    const { arch, platform, baseUrl, extension } = this.config;
+    let version = PJ.version.trim()
+    return `${baseUrl}/${version}/qstash-server_${version}_${platform}_${arch}${extension}`;
   }
 
   public async download(): Promise<NodeJS.ReadableStream> {
@@ -54,16 +61,15 @@ class BinaryDownloader {
   public async extract(stream: NodeJS.ReadableStream): Promise<void> {
     return new Promise((resolve, reject) => {
         const bin = path.resolve("./bin");
-        switch (this.config.platform) {
-            case "darwin":
-            case "linux":
+        switch (this.config.extension) {
+            case ".tar.gz":
               const untar = tar.extract({ cwd: bin });
               stream
                 .pipe(untar)
                 .on('close', () => resolve())
                 .on('error', reject)
               break;
-            case "win32":
+            case ".zip":
                 stream
                   .pipe(unzipper.Extract({ path: bin }))
                   .on('close', () => resolve())
@@ -73,24 +79,34 @@ class BinaryDownloader {
   }
 }
 
-function getSysInfo(): { arch: BinaryConfig['arch'], platform: BinaryConfig['platform'] } {
-    const arch = os.arch() === 'arm64' ? 'arm64' : 'x64';
-    const platform = os.platform() as BinaryConfig['platform'];
+function getSysInfo(): { arch: BinaryConfig['arch'], platform: BinaryConfig['platform'], extension: BinaryConfig['extension'] } {
+    const arch = archMap[process.arch]
+    const platform = platformMap[process.platform]
+    const extension = extensionMap[process.platform]
 
-    if (!['darwin', 'linux', 'win32'].includes(platform)) {
-      throw new Error(`Unsupported platform: ${platform}`);
+    if (!platform) {
+      throw new Error(`Unsupported platform: ${process.platform}`);
     }
 
-    return { arch, platform };
+    if (!arch) {
+      throw new Error(`Unsupported architecture: ${process.arch}`);
+    }
+
+    if (!extension) {
+      throw new Error(`Unsupported extension: ${process.platform}`);
+    }
+
+    return { arch, platform, extension };
 }
 
 (async () => {
     try {
-        const { arch, platform } = getSysInfo();
+        const { arch, platform, extension } = getSysInfo();
     
         const downloader = new BinaryDownloader({
           arch,
           platform,
+          extension,
           baseUrl: 'https://artifacts.upstash.com/qstash/versions'
         });
         const stream = await downloader.download();
