@@ -21,11 +21,9 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/node-fetch": "2.6.13",
     "@types/unzipper": "0.10.11"
   },
   "dependencies": {
-    "node-fetch": "3.3.2",
     "tar": "7.5.13",
     "unzipper": "0.12.3"
   }
