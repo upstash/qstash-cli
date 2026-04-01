@@ -1,6 +1,6 @@
 {
   "name": "@upstash/qstash-cli",
-  "version": "2.20.9",
+  "version": "2.36.5",
   "description": "Offical CLI tool for QStash",
   "main": "index.js",
   "scripts": {
@@ -21,13 +21,12 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/node-fetch": "^2.6.12",
-    "@types/tar": "^6.1.1",
-    "@types/unzipper": "^0.10.10"
+    "@types/node-fetch": "2.6.13",
+    "@types/unzipper": "0.10.11"
   },
   "dependencies": {
-    "node-fetch": "2.6.2",
-    "tar": "^6.1.1",
-    "unzipper": "^0.12.3"
+    "node-fetch": "3.3.2",
+    "tar": "7.5.13",
+    "unzipper": "0.12.3"
   }
 }

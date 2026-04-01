@@ -5,6 +5,9 @@ on:
     types:
       - published
 
+permissions:
+  contents: read
+
 jobs:
   release:
     name: Release
@@ -17,9 +20,9 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.11"
 
       - name: Set package version
         run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
@@ -30,15 +33,25 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Set NPM_TOKEN
-        run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
+      - name: Verify build output
+        run: |
+          if [ ! -s install.js ]; then
+            echo "Error: install.js is empty or missing. Aborting publish." >&2
+            exit 1
+          fi
 
       - name: Publish
         if: "!github.event.release.prerelease"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          npm config set "//registry.npmjs.org/:_authToken" "${NODE_AUTH_TOKEN}"
           npm publish --access public
 
       - name: Publish release candidate
         if: "github.event.release.prerelease"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          npm config set "//registry.npmjs.org/:_authToken" "${NODE_AUTH_TOKEN}"
           npm publish --access public --tag=canary
