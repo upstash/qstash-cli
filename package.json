@@ -17,6 +17,10 @@
     "qstash-cli": "./bin/qstash",
     "qstash": "./bin/qstash"
   },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:upstash/qstash-cli.git"
+  },
   "author": "",
   "license": "ISC",
   "devDependencies": {
