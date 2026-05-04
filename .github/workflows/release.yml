@@ -35,7 +35,7 @@ jobs:
         run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
 
       - name: Install Dependencies
-        run: bun install
+        run: bun install --ignore-scripts
 
       - name: Build
         run: bun run build
