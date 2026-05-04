@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import * as path from 'path';
 import * as os from 'os';
-import tar from "tar";
-import fetch from "node-fetch";
+import { Readable } from 'stream';
+import * as tar from "tar";
 import * as unzipper from 'unzipper';
 import PJ from "./package.json";
 
@@ -53,14 +53,14 @@ class BinaryDownloader {
           if (!res.body) {
             return reject(new Error("No body to pipe"));
           }
-          resolve(res.body);
+          resolve(Readable.fromWeb(res.body as any));
         }).catch(reject);
     });
   }
 
   public async extract(stream: NodeJS.ReadableStream): Promise<void> {
     return new Promise((resolve, reject) => {
-        const bin = path.resolve("./bin");
+        const bin = path.join(__dirname, 'bin');
         switch (this.config.extension) {
             case ".tar.gz":
               const untar = tar.extract({ cwd: bin });
