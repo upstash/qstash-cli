@@ -101,6 +101,12 @@ function getSysInfo(): { arch: BinaryConfig['arch'], platform: BinaryConfig['pla
 
 (async () => {
     try {
+        // Skip install when running in the repo itself (e.g. during local `npm i` / `bun i`).
+        // When installed as a dependency, __dirname will be inside a node_modules folder.
+        if (!__dirname.includes('node_modules')) {
+          return;
+        }
+
         const { arch, platform, extension } = getSysInfo();
     
         const downloader = new BinaryDownloader({
