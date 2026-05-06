@@ -1,0 +1,27 @@
+{
+  "name": "@upstash/qstash-cli-linux-arm64",
+  "version": "0.0.0",
+  "description": "The Linux arm64 binary for @upstash/qstash-cli.",
+  "license": "ISC",
+  "repository": {
+    "type": "github",
+    "url": "upstash/qstash-cli"
+  },
+  "files": [
+    "bin"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "type": "commonjs",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

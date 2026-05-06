@@ -49,7 +49,6 @@ Options:
         -port  The port number to start server on (default: 8080)
 ```
 
-
 ## Docs
 
 See [the local development guide](https://docs.upstash.com/qstash/howto/local-development) for details.

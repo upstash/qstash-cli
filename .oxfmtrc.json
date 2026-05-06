@@ -1,0 +1,6 @@
+{
+  "ignorePatterns": [],
+  "jsdoc": true,
+  "sortPackageJson": true,
+  "sortImports": true
+}

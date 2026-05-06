@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+"use strict";
+
+const { spawnSync } = require("node:child_process");
+
+const PLATFORM_PACKAGES = {
+  "darwin-arm64": "@upstash/qstash-cli-darwin-arm64",
+  "darwin-x64": "@upstash/qstash-cli-darwin-x64",
+  "linux-arm64": "@upstash/qstash-cli-linux-arm64",
+  "linux-x64": "@upstash/qstash-cli-linux-x64",
+  "win32-arm64": "@upstash/qstash-cli-win32-arm64",
+  "win32-x64": "@upstash/qstash-cli-win32-x64",
+};
+
+const key = `${process.platform}-${process.arch}`;
+const pkg = PLATFORM_PACKAGES[key];
+
+if (!pkg) {
+  process.stderr.write(
+    `@upstash/qstash-cli does not support platform ${process.platform} (${process.arch}).\n` +
+      `Supported targets: ${Object.keys(PLATFORM_PACKAGES).join(", ")}.\n`,
+  );
+  process.exit(1);
+}
+
+const binaryName = process.platform === "win32" ? "qstash.exe" : "qstash";
+
+let binaryPath;
+try {
+  binaryPath = require.resolve(`${pkg}/bin/${binaryName}`);
+} catch (err) {
+  process.stderr.write(
+    `Failed to locate the qstash binary for ${key}.\n` +
+      `The optional dependency "${pkg}" was not installed.\n` +
+      `This usually means it was filtered out by optionalDependencies, or you ran your package manager with --no-optional / --omit=optional.\n` +
+      `Reinstall without those flags, or install "${pkg}" explicitly.\n`,
+  );
+  process.exit(1);
+}
+
+const result = spawnSync(binaryPath, process.argv.slice(2), {
+  stdio: "inherit",
+  windowsHide: true,
+});
+
+if (result.error) {
+  process.stderr.write(`Failed to launch qstash binary: ${result.error.message}\n`);
+  process.exit(1);
+}
+
+if (result.signal) {
+  process.kill(process.pid, result.signal);
+  return;
+}
+
+process.exit(result.status ?? 1);
