@@ -2,33 +2,34 @@
   "name": "@upstash/qstash-cli",
   "version": "0.0.0",
   "description": "Offical CLI tool for QStash",
-  "main": "index.js",
-  "scripts": {
-    "prepublishOnly": "touch bin/qstash",
-    "postinstall": "node install.js",
-    "build": "tsc"
+  "license": "ISC",
+  "author": "",
+  "repository": {
+    "type": "github",
+    "url": "upstash/qstash-cli"
   },
-  "files": [
-    "bin",
-    "install.js"
-  ],
   "bin": {
     "@upstash/qstash-cli": "./bin/qstash",
-    "qstash-cli": "./bin/qstash",
-    "qstash": "./bin/qstash"
+    "qstash": "./bin/qstash",
+    "qstash-cli": "./bin/qstash"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:upstash/qstash-cli.git"
+  "files": [
+    "bin"
+  ],
+  "type": "commonjs",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/unzipper": "0.10.11"
+  "optionalDependencies": {
+    "@upstash/qstash-cli-darwin-arm64": "0.0.0",
+    "@upstash/qstash-cli-darwin-x64": "0.0.0",
+    "@upstash/qstash-cli-linux-arm64": "0.0.0",
+    "@upstash/qstash-cli-linux-x64": "0.0.0",
+    "@upstash/qstash-cli-win32-arm64": "0.0.0",
+    "@upstash/qstash-cli-win32-x64": "0.0.0"
   },
-  "dependencies": {
-    "tar": "7.5.13",
-    "unzipper": "0.12.3"
+  "engines": {
+    "node": ">=18"
   }
 }

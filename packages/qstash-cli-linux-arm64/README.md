@@ -1,0 +1,5 @@
+# @upstash/qstash-cli-linux-arm64
+
+This is the **linux-arm64** platform binary for [`@upstash/qstash-cli`](https://www.npmjs.com/package/@upstash/qstash-cli).
+
+This package is an internal implementation detail. **Do not depend on it directly.** Install [`@upstash/qstash-cli`](https://www.npmjs.com/package/@upstash/qstash-cli) instead — it pulls in the correct platform binary as an `optionalDependencies` entry.

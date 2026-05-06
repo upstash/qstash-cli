@@ -10,12 +10,22 @@ permissions:
   contents: read
 
 jobs:
-  release:
-    name: Release
+  publish-platform-packages:
+    name: Publish ${{ matrix.node_os }}-${{ matrix.node_arch }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { node_os: darwin, node_arch: arm64, src_os: darwin, src_arch: arm64, ext: tar.gz }
+          - { node_os: darwin, node_arch: x64, src_os: darwin, src_arch: amd64, ext: tar.gz }
+          - { node_os: linux, node_arch: arm64, src_os: linux, src_arch: arm64, ext: tar.gz }
+          - { node_os: linux, node_arch: x64, src_os: linux, src_arch: amd64, ext: tar.gz }
+          - { node_os: win32, node_arch: arm64, src_os: windows, src_arch: arm64, ext: zip }
+          - { node_os: win32, node_arch: x64, src_os: windows, src_arch: amd64, ext: zip }
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set env
         run: echo "VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
@@ -26,31 +36,79 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.11"
+      - name: Set platform package version
+        run: node scripts/set-version.mjs --version "$VERSION" --manifest packages/qstash-cli-${{ matrix.node_os }}-${{ matrix.node_arch }}/package.json
 
-      - name: Set package version
-        run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
-
-      - name: Install Dependencies
-        run: bun install --ignore-scripts
-
-      - name: Build
-        run: bun run build
-
-      - name: Verify build output
+      - name: Download binary
+        working-directory: packages/qstash-cli-${{ matrix.node_os }}-${{ matrix.node_arch }}
         run: |
-          if [ ! -s install.js ]; then
-            echo "Error: install.js is empty or missing. Aborting publish." >&2
-            exit 1
-          fi
+          url="https://artifacts.upstash.com/qstash/versions/${VERSION}/qstash-server_${VERSION}_${{ matrix.src_os }}_${{ matrix.src_arch }}.${{ matrix.ext }}"
+          echo "Downloading $url"
+          curl --fail --show-error --location --output archive.${{ matrix.ext }} "$url"
+
+      - name: Extract binary (tar.gz)
+        if: matrix.ext == 'tar.gz'
+        working-directory: packages/qstash-cli-${{ matrix.node_os }}-${{ matrix.node_arch }}
+        run: |
+          mkdir -p bin
+          tar -xzf archive.tar.gz -C bin
+          rm archive.tar.gz
+          rm -f bin/.gitkeep
+          chmod +x bin/qstash
+          ls -l bin
+
+      - name: Extract binary (zip)
+        if: matrix.ext == 'zip'
+        working-directory: packages/qstash-cli-${{ matrix.node_os }}-${{ matrix.node_arch }}
+        run: |
+          mkdir -p bin
+          unzip -o archive.zip -d bin
+          rm archive.zip
+          rm -f bin/.gitkeep
+          ls -l bin
 
       - name: Publish release candidate
-        if: "github.event.release.prerelease"
-        run: npm publish --access public --tag=canary --provenance
+        if: github.event.release.prerelease
+        working-directory: packages/qstash-cli-${{ matrix.node_os }}-${{ matrix.node_arch }}
+        run: npm publish --tag canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish
-        if: "!github.event.release.prerelease"
-        run: npm publish --access public --provenance
+        if: ${{ !github.event.release.prerelease }}
+        working-directory: packages/qstash-cli-${{ matrix.node_os }}-${{ matrix.node_arch }}
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-main:
+    name: Publish main package
+    needs: publish-platform-packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set env
+        run: echo "VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Set version and pin optionalDependencies
+        run: node scripts/set-version.mjs --version "$VERSION"
+
+      - name: Publish release candidate
+        if: github.event.release.prerelease
+        run: npm publish --tag canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
+        if: ${{ !github.event.release.prerelease }}
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
