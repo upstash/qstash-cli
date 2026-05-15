@@ -10,15 +10,35 @@ permissions:
   contents: read
 
 jobs:
-  release:
-    name: Release
+  publish-platform:
+    name: Publish ${{ matrix.node_platform }}-${{ matrix.node_arch }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node_platform: darwin
+            node_arch: arm64
+          - node_platform: darwin
+            node_arch: x64
+          - node_platform: linux
+            node_arch: arm64
+          - node_platform: linux
+            node_arch: x64
+          - node_platform: win32
+            node_arch: arm64
+          - node_platform: win32
+            node_arch: x64
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set env
-        run: echo "VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+      - name: Set version from tag
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          VERSION="${REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -26,31 +46,66 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.11"
-
-      - name: Set package version
-        run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
-
-      - name: Install Dependencies
-        run: bun install --ignore-scripts
-
-      - name: Build
-        run: bun run build
-
-      - name: Verify build output
+      - name: Build platform package
+        env:
+          NODE_PLATFORM: ${{ matrix.node_platform }}
+          NODE_ARCH: ${{ matrix.node_arch }}
         run: |
-          if [ ! -s install.js ]; then
-            echo "Error: install.js is empty or missing. Aborting publish." >&2
-            exit 1
-          fi
+          scripts/build-platform-package.sh \
+            "$VERSION" \
+            "$NODE_PLATFORM" \
+            "$NODE_ARCH" \
+            "dist/$NODE_PLATFORM-$NODE_ARCH"
 
-      - name: Publish release candidate
-        if: "github.event.release.prerelease"
+      - name: Publish platform package (prerelease)
+        if: github.event.release.prerelease
+        working-directory: dist/${{ matrix.node_platform }}-${{ matrix.node_arch }}
         run: npm publish --access public --tag=canary --provenance
 
-      - name: Publish
-        if: "!github.event.release.prerelease"
+      - name: Publish platform package (latest)
+        if: ${{ !github.event.release.prerelease }}
+        working-directory: dist/${{ matrix.node_platform }}-${{ matrix.node_arch }}
+        run: npm publish --access public --provenance
+
+  publish-wrapper:
+    name: Publish wrapper
+    runs-on: ubuntu-latest
+    needs: publish-platform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version from tag
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          VERSION="${REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Pin version and optionalDependencies
+        run: |
+          jq --arg v "$VERSION" '
+            .version = $v
+            | .optionalDependencies = (
+                .optionalDependencies
+                | to_entries
+                | map(.value = $v)
+                | from_entries
+              )
+          ' package.json > package.json.tmp
+          mv package.json.tmp package.json
+          cat package.json
+
+      - name: Publish wrapper (prerelease)
+        if: github.event.release.prerelease
+        run: npm publish --access public --tag=canary --provenance
+
+      - name: Publish wrapper (latest)
+        if: ${{ !github.event.release.prerelease }}
         run: npm publish --access public --provenance

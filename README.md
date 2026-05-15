@@ -26,16 +26,22 @@ It is 100% built on stateless HTTP requests and designed for:
 
 ## Quick Start
 
-### Install
+### Run without installing
+
+The CLI ships a platform-specific binary via npm, so any package runner works
+out of the box — no install scripts, no `--trust` flag:
 
 ```bash
-npm install @upstash/qstash-cli
+bunx @upstash/qstash-cli dev
+npx  @upstash/qstash-cli dev
+pnpm dlx @upstash/qstash-cli dev
 ```
 
-## Basic Usage:
+### Install globally
 
 ```bash
-npx @upstash/qstash-cli dev
+npm install -g @upstash/qstash-cli
+qstash dev
 ```
 
 ### Available Commands
