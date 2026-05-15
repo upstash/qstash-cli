@@ -9,29 +9,27 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  publish-platform:
-    name: Publish ${{ matrix.node_platform }}-${{ matrix.node_arch }}
+  build:
+    name: Build ${{ matrix.node_platform }}-${{ matrix.node_arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - node_platform: darwin
-            node_arch: arm64
-          - node_platform: darwin
-            node_arch: x64
-          - node_platform: linux
-            node_arch: arm64
-          - node_platform: linux
-            node_arch: x64
-          - node_platform: win32
-            node_arch: arm64
-          - node_platform: win32
-            node_arch: x64
+          - { node_platform: darwin, node_arch: arm64 }
+          - { node_platform: darwin, node_arch: x64 }
+          - { node_platform: linux,  node_arch: arm64 }
+          - { node_platform: linux,  node_arch: x64 }
+          - { node_platform: win32,  node_arch: arm64 }
+          - { node_platform: win32,  node_arch: x64 }
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Set version from tag
         env:
@@ -40,13 +38,7 @@ jobs:
           VERSION="${REF#refs/tags/v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-
-      - name: Build platform package
+      - name: Build platform package (downloads, verifies SHA-256, sanity-checks binary)
         env:
           NODE_PLATFORM: ${{ matrix.node_platform }}
           NODE_ARCH: ${{ matrix.node_arch }}
@@ -57,14 +49,49 @@ jobs:
             "$NODE_ARCH" \
             "dist/$NODE_PLATFORM-$NODE_ARCH"
 
+      - name: Upload subpackage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: subpackage-${{ matrix.node_platform }}-${{ matrix.node_arch }}
+          path: dist/${{ matrix.node_platform }}-${{ matrix.node_arch }}
+          retention-days: 1
+          if-no-files-found: error
+
+  publish-platform:
+    name: Publish ${{ matrix.node_platform }}-${{ matrix.node_arch }}
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { node_platform: darwin, node_arch: arm64 }
+          - { node_platform: darwin, node_arch: x64 }
+          - { node_platform: linux,  node_arch: arm64 }
+          - { node_platform: linux,  node_arch: x64 }
+          - { node_platform: win32,  node_arch: arm64 }
+          - { node_platform: win32,  node_arch: x64 }
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Download subpackage artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: subpackage-${{ matrix.node_platform }}-${{ matrix.node_arch }}
+          path: dist
+
       - name: Publish platform package (prerelease)
         if: github.event.release.prerelease
-        working-directory: dist/${{ matrix.node_platform }}-${{ matrix.node_arch }}
+        working-directory: dist
         run: npm publish --access public --tag=canary --provenance
 
       - name: Publish platform package (latest)
         if: ${{ !github.event.release.prerelease }}
-        working-directory: dist/${{ matrix.node_platform }}-${{ matrix.node_arch }}
+        working-directory: dist
         run: npm publish --access public --provenance
 
   publish-wrapper:
@@ -73,7 +100,7 @@ jobs:
     needs: publish-platform
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Set version from tag
         env:
@@ -83,7 +110,7 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -101,6 +128,24 @@ jobs:
           ' package.json > package.json.tmp
           mv package.json.tmp package.json
           cat package.json
+
+      - name: Wait for platform subpackages to be resolvable on npm
+        run: |
+          set -euo pipefail
+          deps=$(jq -r '.optionalDependencies | keys[]' package.json)
+          for dep in $deps; do
+            attempt=0
+            until npm view "${dep}@${VERSION}" version --registry=https://registry.npmjs.org >/dev/null 2>&1; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge 6 ]; then
+                echo "Timed out waiting for ${dep}@${VERSION} on npm" >&2
+                exit 1
+              fi
+              echo "Waiting for ${dep}@${VERSION} (attempt ${attempt})..."
+              sleep $((attempt * 5))
+            done
+            echo "OK: ${dep}@${VERSION}"
+          done
 
       - name: Publish wrapper (prerelease)
         if: github.event.release.prerelease
